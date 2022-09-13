@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Days/Days.iml" filepath="$PROJECT_DIR$/Days/Days.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Network/Network.iml" filepath="$PROJECT_DIR$/Network/Network.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/YearlyCalendar.iml" filepath="$PROJECT_DIR$/.idea/YearlyCalendar.iml" />
       <module fileurl="file://$PROJECT_DIR$/default/default.iml" filepath="$PROJECT_DIR$/default/default.iml" />
     </modules>

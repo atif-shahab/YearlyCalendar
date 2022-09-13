@@ -1,10 +1,9 @@
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.util.stream.Collectors.joining;
 
 
 // https://www.islamicfinder.us/index.php/api/prayer_times?country=US&zipcode=94582&latitude=37.7767&longitude=-121.9692&method=2&juristic=1&date=1663027200
@@ -17,6 +16,7 @@ class yearlyCalendar {
         String longitude = "-121.9692";
         String method = "2";
         String juristic = "1";
+        String timeFormat = "0";
 
         int year = 2024;
         ArrayList<Day> daysInYear = Days.getDays(year);
@@ -30,19 +30,24 @@ class yearlyCalendar {
         requestParams.put("longitude", longitude);
         requestParams.put("method", method);
         requestParams.put("juristic", juristic);
+        requestParams.put("time_format", timeFormat);
 
         daysInYear.forEach((n) -> {
             requestParams.put("date", n.getEpochInSec().toString());
-            String encodedURL = requestParams.keySet().stream()
-                    .map(key -> key + "=" + encodeValue(requestParams.get(key)))
-                    .collect(joining("&", endpoint, ""));
-
+            URL encodedURL;
+            try {
+                encodedURL = newURL.getURL(endpoint, requestParams);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             System.out.println(encodedURL);
+            try {
+                HTTPGet.sendGET(encodedURL);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         });
-
+        }
     }
 
-    private static String encodeValue(String value) {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8);
-    }
-}
+
