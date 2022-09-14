@@ -36,7 +36,7 @@ class yearlyCalendar {
         requestParams.put("time_format", timeFormat);
         ObjectMapper mapper = new ObjectMapper();
 
-        System.out.println("Date\tHijri Date\tFajr\tDuha\tDhuhr\tAsr\tMaghrib\tIsha");
+        System.out.println("Gregorian Date\tHijri Date\tFajr\tDuha\tDhuhr\tAsr\tMaghrib\tIsha");
         daysInYear.forEach((day) -> {
             requestParams.put("date", day.getEpochInSec().toString());
 
