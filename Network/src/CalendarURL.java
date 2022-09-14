@@ -5,8 +5,8 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.joining;
 
-public class newURL {
-    public static URL getURL(String endpoint, Map<String, String> requestParams) throws Exception{
+public class CalendarURL {
+    public static URL getTimingURL(String endpoint, Map<String, String> requestParams) throws Exception{
         String encodedURL = requestParams.keySet().stream()
                 .map(key -> key + "=" + encodeValue(requestParams.get(key)))
                 .collect(joining("&", endpoint, ""));

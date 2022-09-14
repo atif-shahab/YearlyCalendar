@@ -5,6 +5,15 @@ public class Day {
     private Long epochInSec;
 
     private Timings timing;
+    private String hijriDate;
+    public String getHijriDate() {
+        return hijriDate;
+    }
+
+    public void setHijriDate(String hijriDate) {
+        this.hijriDate = hijriDate;
+    }
+
     public void setTiming(Timings timing) {
         this.timing = timing;
     }
@@ -37,6 +46,7 @@ public class Day {
 
     public String tabularPrint() {
         return getDate() + "\t"
+                + getHijriDate() + "\t"
                 + getTiming().fajr + "\t"
                 + getTiming().duha + "\t"
                 + getTiming().dhuhr + "\t"
