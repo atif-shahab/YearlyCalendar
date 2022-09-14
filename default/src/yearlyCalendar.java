@@ -1,3 +1,5 @@
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -18,7 +20,7 @@ class yearlyCalendar {
         String juristic = "1";
         String timeFormat = "0";
 
-        int year = 2024;
+        int year = 2023;
         ArrayList<Day> daysInYear = Days.getDays(year);
 
         daysInYear.forEach((n) -> System.out.println(n));
@@ -31,7 +33,9 @@ class yearlyCalendar {
         requestParams.put("method", method);
         requestParams.put("juristic", juristic);
         requestParams.put("time_format", timeFormat);
+        ObjectMapper mapper = new ObjectMapper();
 
+        System.out.println("Date\tFajr\tDuha\tDhuhr\tAsr\tMaghrib\tIsha");
         daysInYear.forEach((n) -> {
             requestParams.put("date", n.getEpochInSec().toString());
             URL encodedURL;
@@ -40,9 +44,14 @@ class yearlyCalendar {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            System.out.println(encodedURL);
+            //System.out.println(encodedURL);
             try {
-                HTTPGet.sendGET(encodedURL);
+                String resp = HTTPGet.sendGET(encodedURL);
+                n.setTiming(((RemoteTimeResult) mapper
+                        .readerFor(RemoteTimeResult.class)
+                        .readValue(resp))
+                        .getTiming());
+                System.out.println(n.tabularPrint());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

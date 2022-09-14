@@ -13,7 +13,7 @@ public class newURL {
         return new URL(encodedURL);
     }
 
-    private static String encodeValue(String value) {
+    private static String encodeValue(String value)  {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }

@@ -4,6 +4,13 @@ public class Day {
     private LocalDate date;
     private Long epochInSec;
 
+    private Timings timing;
+    public void setTiming(Timings timing) {
+        this.timing = timing;
+    }
+    public Timings getTiming() {
+        return timing;
+    }
     public Day (LocalDate date, Long epochInSec) {
         setDate(date);
         setEpochInSec(epochInSec);
@@ -25,7 +32,17 @@ public class Day {
     }
 
     public String toString() {
-        return getDate() + ": " + getEpochInSec();
+        return getDate() + ": " + getEpochInSec() + " : " + getTiming();
+    }
+
+    public String tabularPrint() {
+        return getDate() + "\t"
+                + getTiming().fajr + "\t"
+                + getTiming().duha + "\t"
+                + getTiming().dhuhr + "\t"
+                + getTiming().asr + "\t"
+                + getTiming().maghrib + "\t"
+                + getTiming().isha;
     }
 
 }
