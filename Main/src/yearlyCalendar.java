@@ -128,43 +128,50 @@ class yearlyCalendar {
             return iqamaTimeForEachDay.get(iqamaTimeForEachDay.size()-1);
         }
 
-    private static LocalTime getAsrIqama(List<Day> days) {
-        Iterator<Day> it = days.iterator();
-        String retVal = null;
+        private static LocalTime getAsrIqama(List<Day> days) {
+            Iterator<Day> it = days.iterator();
+            String retVal = null;
 
-        SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
-        for(Day day : days) {
-            LocalTime start = LocalTime.parse(day.getTiming().asr);
-            int startInMin = start.getHour() * 60 + start.getMinute();
-            int iqamaInMin = startInMin + 10 + 3;
-            int remainder = iqamaInMin % 10;
-            iqamaInMin = Math.round((float)iqamaInMin/10)*10;
-            if(iqamaInMin%60 != 0)
+            SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
+            for(Day day : days) {
+                int startInMin = toMinutes(day.getTiming().asr);
+                int iqamaInMin = startInMin + 10 + 3;
+                iqamaInMin = Math.round((float)iqamaInMin/10)*10;
                 iqamaTimeForEachDay.put(new Integer(iqamaInMin)
-                                    , LocalTime.parse(iqamaInMin/60 +":" + iqamaInMin%60));
-            else
-                iqamaTimeForEachDay.put(new Integer(iqamaInMin)
-                        , LocalTime.parse(iqamaInMin/60 +":" + iqamaInMin%60 + "0"));
-        }
+                        , toTime(iqamaInMin));
+            }
 
-        Map.Entry<Integer, LocalTime> validIqamaTime = null;
-        for(Map.Entry<Integer, LocalTime> entry : iqamaTimeForEachDay.entrySet()) {
-            boolean foundIt = true;
-            for(Day day: days) {
-                LocalTime start = LocalTime.parse(day.getTiming().asr);
-                int startInMin = start.getHour() * 60 + start.getMinute();
-                if(entry.getKey() - startInMin < 0) {
-                    foundIt = false;
+            Map.Entry<Integer, LocalTime> validIqamaTime = null;
+            for(Map.Entry<Integer, LocalTime> entry : iqamaTimeForEachDay.entrySet()) {
+                boolean foundIt = true;
+                for(Day day: days) {
+                    int startInMin = toMinutes(day.getTiming().asr);
+                    if(entry.getKey() - startInMin < 0) {
+                        foundIt = false;
+                        break;
+                    }
+                }
+                if(foundIt) {
+                    validIqamaTime = entry;
                     break;
                 }
             }
-            if(foundIt) {
-                validIqamaTime = entry;
-                break;
-            }
+            return validIqamaTime.getValue();
         }
-        return validIqamaTime.getValue();
-    }
+
+        private static int toMinutes(String time) {
+            LocalTime start = LocalTime.parse(time);
+            return start.getHour() * 60 + start.getMinute();
+        }
+
+        private static LocalTime toTime(int minutes) {
+            LocalTime retVal = null;
+            if(minutes%60 != 0)
+                retVal = LocalTime.parse(minutes/60 +":" + minutes%60);
+            else
+               retVal =  LocalTime.parse(minutes/60 +":" + minutes%60 + "0");
+            return retVal;
+        }
 
         private static List<Day> setDhuhrIqama(List<Day> days, LocalTime iqamaTime) {
             days.forEach(day -> {
@@ -176,12 +183,12 @@ class yearlyCalendar {
             return days;
         }
 
-    private static List<Day> setAsrIqama(List<Day> days, LocalTime iqamaTime) {
-        days.forEach(day -> {
-            day.getTiming().setAsrIqama(iqamaTime.toString());
-        });
-        return days;
-    }
+        private static List<Day> setAsrIqama(List<Day> days, LocalTime iqamaTime) {
+            days.forEach(day -> {
+                day.getTiming().setAsrIqama(iqamaTime.toString());
+            });
+            return days;
+        }
 
         private static boolean isDayLightWeek(List<Day> days, String timeZone) {
             TimeZone tz = TimeZone.getTimeZone(timeZone);
