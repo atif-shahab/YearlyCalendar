@@ -17,6 +17,13 @@ public class Timings {
     public String dhuhrIqama;
     @JsonAlias("Asr")
     public String asr;
+    @JsonIgnore
+    public String asrIqama;
+
+    public void setAsrIqama(String asrIqama) {
+        this.asrIqama = asrIqama;
+    }
+
     @JsonAlias("Maghrib")
     public String maghrib;
     @JsonAlias("Isha")

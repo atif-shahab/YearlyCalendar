@@ -52,6 +52,7 @@ public class Day {
                 + getTiming().dhuhr + "\t"
                 + getTiming().dhuhrIqama + "\t"
                 + getTiming().asr + "\t"
+                +getTiming().asrIqama + "\t"
                 + getTiming().maghrib + "\t"
                 + getTiming().isha;
     }

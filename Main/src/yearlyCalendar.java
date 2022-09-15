@@ -42,8 +42,12 @@ class yearlyCalendar {
         requestParams.put("timezone", timezone);
         ObjectMapper mapper = new ObjectMapper();
 
-        System.out.println("\"Gregorian Date\"\t\"Hijri Date\"\t\"Fajr Adhan\"\tDuha\t\"Dhuhr Adhan\"" +
-                "\t\"Dhuhr Iqama\"\t\"Asr Adhan\"\t\"Maghrib Adhan\"\t\"Isha Adhan\"");
+        System.out.println("\"Gregorian Date\"\t\"Hijri Date\"\t" +
+                "\"Fajr Adhan\"\tDuha\t" +
+                "\"Dhuhr Adhan\"\t\"Dhuhr Iqama\"\t" +
+                "\"Asr Adhan\"\t\"Asr Iqama\"\t" +
+                "\"Maghrib Adhan\"\t" +
+                "\"Isha Adhan\"");
 
 
         daysInYear.forEach((day) -> {
@@ -71,6 +75,7 @@ class yearlyCalendar {
             while(daysInYear.get(0).getDate().getDayOfWeek() != DayOfWeek.SATURDAY) {
                 Day day = daysInYear.remove(0);
                 day.getTiming().setDhuhrIqama(lastDhuhrIqama);
+                day.getTiming().setAsrIqama(lastAsrIqama);
                 System.out.println(day.tabularPrint());
             }
 
@@ -82,9 +87,12 @@ class yearlyCalendar {
                 if(isDayLightWeek(thisWeek, timezone)) {
                     Day saturday = thisWeek.remove(0);
                     saturday.getTiming().setDhuhrIqama(prevWeek.get(0).getTiming().dhuhrIqama);
+                    saturday.getTiming().setAsrIqama(prevWeek.get(0).getTiming().asrIqama);
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
+                    setAsrIqama(thisWeek, getAsrIqama(thisWeek));
                 } else {
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
+                    setAsrIqama(thisWeek, getAsrIqama(thisWeek));
                 }
                 prevWeek = thisWeek;
             }
@@ -93,13 +101,15 @@ class yearlyCalendar {
 
         private static LocalTime getDhuhrIqama(List<Day> days, String timeZone) {
             TimeZone tz = TimeZone.getTimeZone(timeZone);
-            Iterator<Day> it = days.iterator();
-            String retVal = null;
 
             List<LocalTime> iqamaTimeForEachDay = new ArrayList<>();
-            while(it.hasNext()) {
-                Day day = it.next();
-                if (tz.inDaylightTime(Date.from(day.getDate().atStartOfDay(tz.toZoneId()).plusHours(12).toInstant()))) {
+            for(Day day : days) {
+                if (tz.inDaylightTime(Date
+                                        .from(day.getDate()
+                                                .atStartOfDay(tz.
+                                                        toZoneId())
+                                                .plusHours(12)
+                                                .toInstant()))) {
                     iqamaTimeForEachDay.add(LocalTime.parse("13:30"));
                 } else if (day.getDate().getDayOfWeek() == DayOfWeek.FRIDAY) {//do nothing;
                 }
@@ -118,7 +128,43 @@ class yearlyCalendar {
             return iqamaTimeForEachDay.get(iqamaTimeForEachDay.size()-1);
         }
 
+    private static LocalTime getAsrIqama(List<Day> days) {
+        Iterator<Day> it = days.iterator();
+        String retVal = null;
 
+        SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
+        for(Day day : days) {
+            LocalTime start = LocalTime.parse(day.getTiming().asr);
+            int startInMin = start.getHour() * 60 + start.getMinute();
+            int iqamaInMin = startInMin + 10 + 3;
+            int remainder = iqamaInMin % 10;
+            iqamaInMin = Math.round((float)iqamaInMin/10)*10;
+            if(iqamaInMin%60 != 0)
+                iqamaTimeForEachDay.put(new Integer(iqamaInMin)
+                                    , LocalTime.parse(iqamaInMin/60 +":" + iqamaInMin%60));
+            else
+                iqamaTimeForEachDay.put(new Integer(iqamaInMin)
+                        , LocalTime.parse(iqamaInMin/60 +":" + iqamaInMin%60 + "0"));
+        }
+
+        Map.Entry<Integer, LocalTime> validIqamaTime = null;
+        for(Map.Entry<Integer, LocalTime> entry : iqamaTimeForEachDay.entrySet()) {
+            boolean foundIt = true;
+            for(Day day: days) {
+                LocalTime start = LocalTime.parse(day.getTiming().asr);
+                int startInMin = start.getHour() * 60 + start.getMinute();
+                if(entry.getKey() - startInMin < 0) {
+                    foundIt = false;
+                    break;
+                }
+            }
+            if(foundIt) {
+                validIqamaTime = entry;
+                break;
+            }
+        }
+        return validIqamaTime.getValue();
+    }
 
         private static List<Day> setDhuhrIqama(List<Day> days, LocalTime iqamaTime) {
             days.forEach(day -> {
@@ -129,6 +175,13 @@ class yearlyCalendar {
             });
             return days;
         }
+
+    private static List<Day> setAsrIqama(List<Day> days, LocalTime iqamaTime) {
+        days.forEach(day -> {
+            day.getTiming().setAsrIqama(iqamaTime.toString());
+        });
+        return days;
+    }
 
         private static boolean isDayLightWeek(List<Day> days, String timeZone) {
             TimeZone tz = TimeZone.getTimeZone(timeZone);
