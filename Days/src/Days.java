@@ -4,9 +4,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Days {
-    public static ArrayList<Day> getDays(int year) {
+    public static List<Day> getDays(int year) {
 
         ArrayList<Day> days = new ArrayList<>();
         LocalDate date = LocalDate.of(year, 1, 1);

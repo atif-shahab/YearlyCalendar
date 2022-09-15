@@ -27,7 +27,7 @@ class yearlyCalendar {
         String lastIshaIqama = "19:30";
 
         int year = 2023;
-        ArrayList<Day> daysInYear = Days.getDays(year);
+        List<Day> daysInYear = Days.getDays(year);
 
         //daysInYear.forEach((n) -> System.out.println(n));
 
@@ -75,10 +75,10 @@ class yearlyCalendar {
             }
 
             WeekList weekList = new WeekList(daysInYear);
-            Iterator it = weekList.iterator();
-            ArrayList<Day> prevWeek = null;
+            Iterator<List<Day>> it = weekList.iterator();
+            List<Day> prevWeek = null;
             while(it.hasNext()) {
-                ArrayList<Day> thisWeek = (ArrayList<Day>) it.next();
+                List<Day> thisWeek = it.next();
                 if(isDayLightWeek(thisWeek, timezone)) {
                     Day saturday = thisWeek.remove(0);
                     saturday.getTiming().setDhuhrIqama(prevWeek.get(0).getTiming().dhuhrIqama);
@@ -93,12 +93,12 @@ class yearlyCalendar {
 
         private static LocalTime getDhuhrIqama(List<Day> days, String timeZone) {
             TimeZone tz = TimeZone.getTimeZone(timeZone);
-            Iterator it = days.iterator();
+            Iterator<Day> it = days.iterator();
             String retVal = null;
-            int i = 0;
+
             List<LocalTime> iqamaTimeForEachDay = new ArrayList<>();
             while(it.hasNext()) {
-                Day day = (Day) it.next();
+                Day day = it.next();
                 if (tz.inDaylightTime(Date.from(day.getDate().atStartOfDay(tz.toZoneId()).plusHours(12).toInstant()))) {
                     iqamaTimeForEachDay.add(LocalTime.parse("13:30"));
                 } else if (day.getDate().getDayOfWeek() == DayOfWeek.FRIDAY) {//do nothing;
@@ -117,6 +117,8 @@ class yearlyCalendar {
             Collections.sort(iqamaTimeForEachDay, (a,b) -> a.compareTo(b));
             return iqamaTimeForEachDay.get(iqamaTimeForEachDay.size()-1);
         }
+
+
 
         private static List<Day> setDhuhrIqama(List<Day> days, LocalTime iqamaTime) {
             days.forEach(day -> {
