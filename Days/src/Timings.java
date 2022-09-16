@@ -28,4 +28,11 @@ public class Timings {
     public String maghrib;
     @JsonAlias("Isha")
     public String isha;
+
+    public void setIshaIqama(String ishaIqama) {
+        this.ishaIqama = ishaIqama;
+    }
+
+    @JsonIgnore
+    public String ishaIqama;
 }

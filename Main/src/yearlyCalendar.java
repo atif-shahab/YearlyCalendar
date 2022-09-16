@@ -21,10 +21,10 @@ class yearlyCalendar {
         String juristic = "1";
         String timeFormat = "0";
         String timezone = "America/Los_Angeles";
-        String lastFajrIqama = "6:30";
-        String lastDhuhrIqama = "12:30";
-        String lastAsrIqama = "15:20";
-        String lastIshaIqama = "19:30";
+        String initFajrIqama = "6:30";
+        String initDhuhrIqama = "12:30";
+        String initAsrIqama = "15:30";
+        String initIshaIqama = "19:30";
 
         int year = 2023;
         List<Day> daysInYear = Days.getDays(year);
@@ -47,7 +47,7 @@ class yearlyCalendar {
                 "\"Dhuhr Adhan\"\t\"Dhuhr Iqama\"\t" +
                 "\"Asr Adhan\"\t\"Asr Iqama\"\t" +
                 "\"Maghrib Adhan\"\t" +
-                "\"Isha Adhan\"");
+                "\"Isha Adhan\"\t\"Isha Iqama\"");
 
 
         daysInYear.forEach((day) -> {
@@ -74,8 +74,9 @@ class yearlyCalendar {
 
             while(daysInYear.get(0).getDate().getDayOfWeek() != DayOfWeek.SATURDAY) {
                 Day day = daysInYear.remove(0);
-                day.getTiming().setDhuhrIqama(lastDhuhrIqama);
-                day.getTiming().setAsrIqama(lastAsrIqama);
+                day.getTiming().setDhuhrIqama(initDhuhrIqama);
+                day.getTiming().setAsrIqama(initAsrIqama);
+                day.getTiming().setIshaIqama(initIshaIqama);
                 System.out.println(day.tabularPrint());
             }
 
@@ -88,11 +89,18 @@ class yearlyCalendar {
                     Day saturday = thisWeek.remove(0);
                     saturday.getTiming().setDhuhrIqama(prevWeek.get(0).getTiming().dhuhrIqama);
                     saturday.getTiming().setAsrIqama(prevWeek.get(0).getTiming().asrIqama);
+                    saturday.getTiming().setIshaIqama((prevWeek.get(0).getTiming().ishaIqama));
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
                     setAsrIqama(thisWeek, getAsrIqama(thisWeek));
+                    setIshaIqama(thisWeek, getIshaIqama(thisWeek));
                 } else {
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
                     setAsrIqama(thisWeek, getAsrIqama(thisWeek));
+                    if(startOfRamadhan(thisWeek))
+                        System.out.println("start of ramdhan " + thisWeek.get(0));
+                    if(endOfRamadhan(thisWeek))
+                        System.out.println("end of ramadhan " + thisWeek.get(0));
+                    setIshaIqama(thisWeek, getIshaIqama(thisWeek));
                 }
                 prevWeek = thisWeek;
             }
@@ -129,24 +137,62 @@ class yearlyCalendar {
         }
 
         private static LocalTime getAsrIqama(List<Day> days) {
-            Iterator<Day> it = days.iterator();
-            String retVal = null;
-
             SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
+            //TODO:  Extract the following as a method since it is common to both isha and asr mthods
             for(Day day : days) {
                 int startInMin = toMinutes(day.getTiming().asr);
                 int iqamaInMin = startInMin + 10 + 3;
                 iqamaInMin = Math.round((float)iqamaInMin/10)*10;
-                iqamaTimeForEachDay.put(new Integer(iqamaInMin)
+                iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
                         , toTime(iqamaInMin));
             }
 
+            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "asr");
+            return validIqamaTime;
+        }
+
+        private static LocalTime getIshaIqama(List<Day> days) {
+            SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
+            for(Day day : days) {
+                int startInMin = toMinutes(day.getTiming().isha);
+                int iqamaInMin = startInMin + 10 + 3;
+                iqamaInMin = Math.round((float)iqamaInMin/10)*10;
+                iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
+                        , toTime(iqamaInMin));
+            }
+
+            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "isha");
+            LocalTime sevenThirty = LocalTime.parse("19:30");
+            LocalTime tenTen = LocalTime.parse("22:10");
+            if(validIqamaTime != null) {
+                if (validIqamaTime.compareTo(sevenThirty) < 0)
+                    return sevenThirty;
+                else if (validIqamaTime.compareTo(tenTen) > 0)
+                    return tenTen;
+                else
+                    return validIqamaTime;
+            } else
+                return null;
+        }
+
+        private static LocalTime getValidIqamaTime(List<Day> forDays, Map<Integer
+                                                    , LocalTime> iqamaTimes, String forSalah) {
             Map.Entry<Integer, LocalTime> validIqamaTime = null;
-            for(Map.Entry<Integer, LocalTime> entry : iqamaTimeForEachDay.entrySet()) {
+            for(Map.Entry<Integer, LocalTime> entry : iqamaTimes.entrySet()) {
                 boolean foundIt = true;
-                for(Day day: days) {
-                    int startInMin = toMinutes(day.getTiming().asr);
-                    if(entry.getKey() - startInMin < 0) {
+                for(Day day: forDays) {
+                    int startInMin = 0;
+                    switch (forSalah) {
+                        case "asr":
+                            startInMin = toMinutes(day.getTiming().asr);
+                            break;
+                        case "isha":
+                            startInMin = toMinutes(day.getTiming().isha);
+                            break;
+                        default:
+                            throw new RuntimeException("unknow salah type " + forSalah);
+                    }
+                    if(entry.getKey() - startInMin < 3) {
                         foundIt = false;
                         break;
                     }
@@ -156,12 +202,14 @@ class yearlyCalendar {
                     break;
                 }
             }
-            return validIqamaTime.getValue();
+            if(validIqamaTime != null)
+                return validIqamaTime.getValue();
+            else
+                return null;
         }
-
-        private static int toMinutes(String time) {
-            LocalTime start = LocalTime.parse(time);
-            return start.getHour() * 60 + start.getMinute();
+        private static int toMinutes(String timeString) {
+            LocalTime time = LocalTime.parse(timeString);
+            return time.getHour() * 60 + time.getMinute();
         }
 
         private static LocalTime toTime(int minutes) {
@@ -186,6 +234,13 @@ class yearlyCalendar {
         private static List<Day> setAsrIqama(List<Day> days, LocalTime iqamaTime) {
             days.forEach(day -> {
                 day.getTiming().setAsrIqama(iqamaTime.toString());
+            });
+            return days;
+        }
+
+        private static List<Day> setIshaIqama(List<Day> days, LocalTime iqamaTime) {
+            days.forEach(day -> {
+                day.getTiming().setIshaIqama(iqamaTime.toString());
             });
             return days;
         }
@@ -216,6 +271,18 @@ class yearlyCalendar {
                                                     .toInstant()));
             return result;
         }
+
+        private static boolean startOfRamadhan(List<Day> forDays) {
+            if(forDays.get(0).getHijriMonth() == 8
+                    && forDays.get(forDays.size()-1).getHijriMonth() == 9) return true;
+            else return false;
+        }
+
+    private static boolean endOfRamadhan(List<Day> forDays) {
+        if(forDays.get(0).getHijriMonth() == 9
+                && forDays.get(forDays.size()-1).getHijriMonth() == 10) return true;
+        else return false;
+    }
     }
 
 

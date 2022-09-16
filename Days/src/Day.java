@@ -1,4 +1,6 @@
 import java.time.LocalDate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Day {
     private LocalDate date;
@@ -7,7 +9,7 @@ public class Day {
     private Timings timing;
     private String hijriDate;
     public String getHijriDate() {
-        return hijriDate;
+        return this.hijriDate;
     }
 
     public void setHijriDate(String hijriDate) {
@@ -29,7 +31,7 @@ public class Day {
     }
 
     public LocalDate getDate() {
-        return date;
+        return this.date;
     }
 
     private void setEpochInSec(Long epochInSec) {
@@ -52,9 +54,18 @@ public class Day {
                 + getTiming().dhuhr + "\t"
                 + getTiming().dhuhrIqama + "\t"
                 + getTiming().asr + "\t"
-                +getTiming().asrIqama + "\t"
+                + getTiming().asrIqama + "\t"
                 + getTiming().maghrib + "\t"
-                + getTiming().isha;
+                + getTiming().isha + "\t"
+                + getTiming().ishaIqama;
     }
 
+    public int getHijriMonth() {
+        Pattern pattern = Pattern.compile("-(.*?)-");
+        Matcher matcher = pattern.matcher(getHijriDate());
+        if(matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        } else
+            throw new RuntimeException("Invalid Month in hijri date " + getHijriDate());
+    }
 }
