@@ -61,11 +61,15 @@ public class Day {
     }
 
     public int getHijriMonth() {
-        Pattern pattern = Pattern.compile("-(.*?)-");
+        String p = "-(\\d\\d)-";
+        Pattern pattern = Pattern.compile(p);
         Matcher matcher = pattern.matcher(getHijriDate());
         if(matcher.find()) {
             return Integer.parseInt(matcher.group(1));
         } else
-            throw new RuntimeException("Invalid Month in hijri date " + getHijriDate());
+            throw new RuntimeException("Month in hijri date "
+                                            + getHijriDate()
+                                            + " didn't match the pattern "
+                                            + p);
     }
 }
