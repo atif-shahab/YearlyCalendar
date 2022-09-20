@@ -87,6 +87,7 @@ class yearlyCalendar {
             while(it.hasNext()) {
                 List<Day> thisWeek = it.next();
                 if(isDayLightWeek(thisWeek, timezone)) {
+                    //TODO:  Edge case where the start of Ramadhan coincides with the week of time change
                     Day saturday = thisWeek.remove(0);
                     saturday.getTiming().setDhuhrIqama(prevWeek.get(0).getTiming().dhuhrIqama);
                     saturday.getTiming().setAsrIqama(prevWeek.get(0).getTiming().asrIqama);
@@ -94,11 +95,11 @@ class yearlyCalendar {
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
                     setAsrIqama(thisWeek, getAsrIqama(thisWeek));
                     if(startOfRamadhan(thisWeek))
-                        System.out.println("start of ramdhan " + thisWeek.get(0));
+                        throw new UnsupportedOperationException("start of ramdhan " + thisWeek.get(0));
                     else if(endOfRamadhan(thisWeek))
-                        System.out.println("end of ramadhan " + thisWeek.get(0));
+                        throw new UnsupportedOperationException("end of ramadhan " + thisWeek.get(0));
                     else if(isRamadhanWeek(thisWeek))
-                        System.out.println("ramadhan " + thisWeek.get(0));
+                        throw new UnsupportedOperationException("ramadhan week " + thisWeek.get(0));
                     else
                         setIshaIqama(thisWeek, getIshaIqama(thisWeek, 10, false));
                 } else {
@@ -109,12 +110,15 @@ class yearlyCalendar {
                         LocalTime ishaIqamaaInRamadhan = getIshaIqama(thisWeek, 15, true);
 
                         for(Day day : thisWeek) {
-                            if(day.getHijriMonth() == 8)
-                                day.getTiming().setIshaIqama(ishaIqamaBeforeRamadhan.toString());
-                            else if (day.getHijriMonth() == 9)
-                                day.getTiming().setIshaIqama(ishaIqamaaInRamadhan.toString());
-                            else
-                                throw new IllegalStateException("In valid hijri month");
+                            switch (day.getHijriMonth()) {
+                                case 8 ->
+                                    day.getTiming().setIshaIqama(ishaIqamaBeforeRamadhan.toString());
+                                case 9 ->
+                                    day.getTiming().setIshaIqama(ishaIqamaaInRamadhan.toString());
+                                default ->
+                                    throw new IllegalStateException("In valid hijri month (expecting 8 or 9): "
+                                            + day.getHijriDate());
+                            }
                         }
                     }
                     else if(endOfRamadhan(thisWeek)) {
@@ -122,12 +126,15 @@ class yearlyCalendar {
                         LocalTime ishaIqamaInRamadhan = getIshaIqama(thisWeek, 15, true);
 
                         for (Day day : thisWeek) {
-                            if (day.getHijriMonth() == 9)
-                                day.getTiming().setIshaIqama(ishaIqamaInRamadhan.toString());
-                            else if (day.getHijriMonth() == 10)
-                                day.getTiming().setIshaIqama(ishaIqamaBeforeRamadhan.toString());
-                            else
-                                throw new IllegalStateException("In valid hijri month");
+                            switch (day.getHijriMonth()) {
+                                case 9 ->
+                                    day.getTiming().setIshaIqama(ishaIqamaInRamadhan.toString());
+                                case 10 ->
+                                    day.getTiming().setIshaIqama(ishaIqamaBeforeRamadhan.toString());
+                                default ->
+                                    throw new IllegalStateException("In valid hijri month, expecting 9 or 10: "
+                                            + day.getHijriDate());
+                            }
                         }
                     }
                     else if(isRamadhanWeek(thisWeek))
