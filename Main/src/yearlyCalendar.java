@@ -43,7 +43,7 @@ class yearlyCalendar {
         ObjectMapper mapper = new ObjectMapper();
 
         System.out.println("\"Gregorian Date\"\t\"Hijri Date\"\t" +
-                "\"Fajr Adhan\"\tDuha\t" +
+                "\"Fajr Adhan\"\t\"Duha\"\t" +
                 "\"Dhuhr Adhan\"\t\"Dhuhr Iqama\"\t" +
                 "\"Asr Adhan\"\t\"Asr Iqama\"\t" +
                 "\"Maghrib Adhan\"\t" +
@@ -77,6 +77,7 @@ class yearlyCalendar {
                 day.getTiming().setDhuhrIqama(initDhuhrIqama);
                 day.getTiming().setAsrIqama(initAsrIqama);
                 day.getTiming().setIshaIqama(initIshaIqama);
+
                 System.out.println(day.tabularPrint());
             }
 
@@ -92,15 +93,47 @@ class yearlyCalendar {
                     saturday.getTiming().setIshaIqama((prevWeek.get(0).getTiming().ishaIqama));
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
                     setAsrIqama(thisWeek, getAsrIqama(thisWeek));
-                    setIshaIqama(thisWeek, getIshaIqama(thisWeek));
+                    if(startOfRamadhan(thisWeek))
+                        System.out.println("start of ramdhan " + thisWeek.get(0));
+                    else if(endOfRamadhan(thisWeek))
+                        System.out.println("end of ramadhan " + thisWeek.get(0));
+                    else if(isRamadhanWeek(thisWeek))
+                        System.out.println("ramadhan " + thisWeek.get(0));
+                    else
+                        setIshaIqama(thisWeek, getIshaIqama(thisWeek, 10, false));
                 } else {
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
                     setAsrIqama(thisWeek, getAsrIqama(thisWeek));
-                    if(startOfRamadhan(thisWeek))
-                        System.out.println("start of ramdhan " + thisWeek.get(0));
-                    if(endOfRamadhan(thisWeek))
-                        System.out.println("end of ramadhan " + thisWeek.get(0));
-                    setIshaIqama(thisWeek, getIshaIqama(thisWeek));
+                    if(startOfRamadhan(thisWeek)) {
+                        LocalTime ishaIqamaBeforeRamadhan = getIshaIqama(thisWeek, 10, false);
+                        LocalTime ishaIqamaaInRamadhan = getIshaIqama(thisWeek, 15, true);
+
+                        for(Day day : thisWeek) {
+                            if(day.getHijriMonth() == 8)
+                                day.getTiming().setIshaIqama(ishaIqamaBeforeRamadhan.toString());
+                            else if (day.getHijriMonth() == 9)
+                                day.getTiming().setIshaIqama(ishaIqamaaInRamadhan.toString());
+                            else
+                                throw new IllegalStateException("In valid hijri month");
+                        }
+                    }
+                    else if(endOfRamadhan(thisWeek)) {
+                        LocalTime ishaIqamaBeforeRamadhan = getIshaIqama(thisWeek, 10, false);
+                        LocalTime ishaIqamaInRamadhan = getIshaIqama(thisWeek, 15, true);
+
+                        for (Day day : thisWeek) {
+                            if (day.getHijriMonth() == 9)
+                                day.getTiming().setIshaIqama(ishaIqamaInRamadhan.toString());
+                            else if (day.getHijriMonth() == 10)
+                                day.getTiming().setIshaIqama(ishaIqamaBeforeRamadhan.toString());
+                            else
+                                throw new IllegalStateException("In valid hijri month");
+                        }
+                    }
+                    else if(isRamadhanWeek(thisWeek))
+                        setIshaIqama(thisWeek, getIshaIqama(thisWeek, 15, true));
+                    else
+                        setIshaIqama(thisWeek, getIshaIqama(thisWeek, 10, false));
                 }
                 prevWeek = thisWeek;
             }
@@ -119,7 +152,8 @@ class yearlyCalendar {
                                                 .plusHours(12)
                                                 .toInstant()))) {
                     iqamaTimeForEachDay.add(LocalTime.parse("13:30"));
-                } else if (day.getDate().getDayOfWeek() == DayOfWeek.FRIDAY) {//do nothing;
+                } else if (day.getDate().getDayOfWeek() == DayOfWeek.FRIDAY) {
+                    //do nothing;
                 }
                 else {
                     LocalTime start = LocalTime.parse(day.getTiming().dhuhr);
@@ -151,12 +185,14 @@ class yearlyCalendar {
             return validIqamaTime;
         }
 
-        private static LocalTime getIshaIqama(List<Day> days) {
+        private static LocalTime getIshaIqama(List<Day> days, int timeAfter, boolean isRamadhan) {
             SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
             for(Day day : days) {
                 int startInMin = toMinutes(day.getTiming().isha);
-                int iqamaInMin = startInMin + 10 + 3;
-                iqamaInMin = Math.round((float)iqamaInMin/10)*10;
+                int iqamaInMin = startInMin + timeAfter + 3;
+                if(isRamadhan)
+                    iqamaInMin = (int) Math.ceil((float) iqamaInMin / timeAfter) * timeAfter;
+                else iqamaInMin = Math.round((float) iqamaInMin / timeAfter) * timeAfter;
                 iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
                         , toTime(iqamaInMin));
             }
@@ -164,6 +200,7 @@ class yearlyCalendar {
             LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "isha");
             LocalTime sevenThirty = LocalTime.parse("19:30");
             LocalTime tenTen = LocalTime.parse("22:10");
+            //TODO:  Might need to adjust for Ramadhan
             if(validIqamaTime != null) {
                 if (validIqamaTime.compareTo(sevenThirty) < 0)
                     return sevenThirty;
@@ -172,7 +209,8 @@ class yearlyCalendar {
                 else
                     return validIqamaTime;
             } else
-                return null;
+                throw new IllegalStateException("could not calculate valid Isha Iqama time for the week of "
+                                                            + days.get(0));
         }
 
         private static LocalTime getValidIqamaTime(List<Day> forDays, Map<Integer
@@ -183,14 +221,9 @@ class yearlyCalendar {
                 for(Day day: forDays) {
                     int startInMin = 0;
                     switch (forSalah) {
-                        case "asr":
-                            startInMin = toMinutes(day.getTiming().asr);
-                            break;
-                        case "isha":
-                            startInMin = toMinutes(day.getTiming().isha);
-                            break;
-                        default:
-                            throw new RuntimeException("unknow salah type " + forSalah);
+                        case "asr" -> startInMin = toMinutes(day.getTiming().asr);
+                        case "isha" -> startInMin = toMinutes(day.getTiming().isha);
+                        default -> throw new IllegalStateException("unknow salah type " + forSalah);
                     }
                     if(entry.getKey() - startInMin < 3) {
                         foundIt = false;
@@ -278,11 +311,17 @@ class yearlyCalendar {
             else return false;
         }
 
-    private static boolean endOfRamadhan(List<Day> forDays) {
-        if(forDays.get(0).getHijriMonth() == 9
-                && forDays.get(forDays.size()-1).getHijriMonth() == 10) return true;
-        else return false;
-    }
+        private static boolean endOfRamadhan(List<Day> forDays) {
+            if(forDays.get(0).getHijriMonth() == 9
+                    && forDays.get(forDays.size()-1).getHijriMonth() == 10) return true;
+            else return false;
+        }
+
+        private static boolean isRamadhanWeek(List<Day> forDays) {
+            if(forDays.get(0).getHijriMonth() == 9
+                    && forDays.get(forDays.size()-1).getHijriMonth() == 9) return true;
+            else return false;
+        }
     }
 
 

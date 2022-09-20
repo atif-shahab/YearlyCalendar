@@ -29,6 +29,7 @@ public class WeekList  implements Iterable<List<Day>> {
             public void remove() {
                 throw new UnsupportedOperationException();
             }
+
         };
     }
 }
