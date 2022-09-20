@@ -43,7 +43,8 @@ class yearlyCalendar {
         ObjectMapper mapper = new ObjectMapper();
 
         System.out.println("\"Gregorian Date\"\t\"Hijri Date\"\t" +
-                "\"Fajr Adhan\"\t\"Duha\"\t" +
+                "\"Fajr Adhan\"\t\"Fajr Iqama\"\t" +
+                "\"Duha\"\t" +
                 "\"Dhuhr Adhan\"\t\"Dhuhr Iqama\"\t" +
                 "\"Asr Adhan\"\t\"Asr Iqama\"\t" +
                 "\"Maghrib Adhan\"\t" +

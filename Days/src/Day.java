@@ -50,6 +50,7 @@ public class Day {
         return getDate() + "\t"
                 + getHijriDate() + "\t"
                 + getTiming().fajr + "\t"
+                + getTiming().fajrIqama + "\t"
                 + getTiming().duha + "\t"
                 + getTiming().dhuhr + "\t"
                 + getTiming().dhuhrIqama + "\t"

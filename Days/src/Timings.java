@@ -4,6 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class Timings {
     @JsonAlias("Fajr")
     public String fajr;
+
+    public void setFajrIqama(String fajrIqama) {
+        this.fajrIqama = fajrIqama;
+    }
+
+    @JsonIgnore
+    public String fajrIqama;
     @JsonAlias("Duha")
     public String duha;
     @JsonAlias("Dhuhr")
