@@ -221,8 +221,35 @@ class yearlyCalendar {
                                                             + days.get(0));
         }
 
-        private static LocalTime getValidIqamaTime(List<Day> forDays, Map<Integer
-                                                    , LocalTime> iqamaTimes, String forSalah) {
+        private static LocalTime getFajrIqama(List<Day> days, int timeAfter) {
+            SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
+            for(Day day : days) {
+                int startInMin = toMinutes(day.getTiming().isha);
+                int iqamaInMin = startInMin + timeAfter + 3;
+
+                iqamaInMin = Math.round((float) iqamaInMin / timeAfter) * timeAfter;
+                iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
+                        , toTime(iqamaInMin));
+            }
+
+            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "fajr");
+            LocalTime five = LocalTime.parse("05:00");
+            LocalTime sixThirty = LocalTime.parse("06:30");
+            //TODO:  Might need to adjust for Ramadhan
+            if(validIqamaTime != null) {
+                if (validIqamaTime.compareTo(five) < 0)
+                    return five;
+                else if (validIqamaTime.compareTo(sixThirty) > 0)
+                    return sixThirty;
+                else
+                    return validIqamaTime;
+            } else
+                throw new IllegalStateException("could not calculate valid Isha Iqama time for the week of "
+                        + days.get(0));
+        }
+
+        private static LocalTime getValidIqamaTime(List<Day> forDays
+                                    , Map<Integer, LocalTime> iqamaTimes, String forSalah) {
             Map.Entry<Integer, LocalTime> validIqamaTime = null;
             for(Map.Entry<Integer, LocalTime> entry : iqamaTimes.entrySet()) {
                 boolean foundIt = true;
@@ -231,6 +258,9 @@ class yearlyCalendar {
                     switch (forSalah) {
                         case "asr" -> startInMin = toMinutes(day.getTiming().asr);
                         case "isha" -> startInMin = toMinutes(day.getTiming().isha);
+                        case "fajr" -> {
+                            throw new UnsupportedOperationException("Fajr salah calculations not implemented");
+                        }
                         default -> throw new IllegalStateException("unknow salah type " + forSalah);
                     }
                     if(entry.getKey() - startInMin < 3) {
