@@ -1,7 +1,6 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.sql.Time;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.*;
@@ -21,7 +20,7 @@ class yearlyCalendar {
         String juristic = "1";
         String timeFormat = "0";
         String timezone = "America/Los_Angeles";
-        String initFajrIqama = "6:30";
+        String initFajrIqama = "06:30";
         String initDhuhrIqama = "12:30";
         String initAsrIqama = "15:30";
         String initIshaIqama = "19:30";
@@ -75,6 +74,7 @@ class yearlyCalendar {
 
             while(daysInYear.get(0).getDate().getDayOfWeek() != DayOfWeek.SATURDAY) {
                 Day day = daysInYear.remove(0);
+                day.getTiming().setFajrIqama((initFajrIqama));
                 day.getTiming().setDhuhrIqama(initDhuhrIqama);
                 day.getTiming().setAsrIqama(initAsrIqama);
                 day.getTiming().setIshaIqama(initIshaIqama);
@@ -90,6 +90,7 @@ class yearlyCalendar {
                 if(isDayLightWeek(thisWeek, timezone)) {
                     //TODO:  Edge case where the start of Ramadhan coincides with the week of time change
                     Day saturday = thisWeek.remove(0);
+                    saturday.getTiming().setFajrIqama(prevWeek.get(0).getTiming().fajrIqama);
                     saturday.getTiming().setDhuhrIqama(prevWeek.get(0).getTiming().dhuhrIqama);
                     saturday.getTiming().setAsrIqama(prevWeek.get(0).getTiming().asrIqama);
                     saturday.getTiming().setIshaIqama((prevWeek.get(0).getTiming().ishaIqama));
@@ -101,21 +102,29 @@ class yearlyCalendar {
                         throw new UnsupportedOperationException("end of ramadhan " + thisWeek.get(0));
                     else if(isRamadhanWeek(thisWeek))
                         throw new UnsupportedOperationException("ramadhan week " + thisWeek.get(0));
-                    else
+                    else {
                         setIshaIqama(thisWeek, getIshaIqama(thisWeek, 10, false));
+                        setFajrIqama(thisWeek, getFajrIqama(thisWeek, 30, false));
+                    }
                 } else {
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
                     setAsrIqama(thisWeek, getAsrIqama(thisWeek));
                     if(startOfRamadhan(thisWeek)) {
                         LocalTime ishaIqamaBeforeRamadhan = getIshaIqama(thisWeek, 10, false);
                         LocalTime ishaIqamaaInRamadhan = getIshaIqama(thisWeek, 15, true);
+                        LocalTime fajrIqamaBeforeRamadhan = getFajrIqama(thisWeek, 30, false);
+                        LocalTime fajrIqamaInRamadhan = getFajrIqama(thisWeek, 20, true);
 
                         for(Day day : thisWeek) {
                             switch (day.getHijriMonth()) {
-                                case 8 ->
+                                case 8 -> {
                                     day.getTiming().setIshaIqama(ishaIqamaBeforeRamadhan.toString());
-                                case 9 ->
+                                    day.getTiming().setFajrIqama(fajrIqamaBeforeRamadhan.toString());
+                                }
+                                case 9 -> {
                                     day.getTiming().setIshaIqama(ishaIqamaaInRamadhan.toString());
+                                    day.getTiming().setFajrIqama(fajrIqamaInRamadhan.toString());
+                                }
                                 default ->
                                     throw new IllegalStateException("In valid hijri month (expecting 8 or 9): "
                                             + day.getHijriDate());
@@ -125,6 +134,7 @@ class yearlyCalendar {
                     else if(endOfRamadhan(thisWeek)) {
                         LocalTime ishaIqamaBeforeRamadhan = getIshaIqama(thisWeek, 10, false);
                         LocalTime ishaIqamaInRamadhan = getIshaIqama(thisWeek, 15, true);
+                        LocalTime fajrIqamaInRamadhan = getFajrIqama(thisWeek, 20, true);
 
                         for (Day day : thisWeek) {
                             switch (day.getHijriMonth()) {
@@ -136,12 +146,18 @@ class yearlyCalendar {
                                     throw new IllegalStateException("In valid hijri month, expecting 9 or 10: "
                                             + day.getHijriDate());
                             }
+                            day.getTiming().setFajrIqama(fajrIqamaInRamadhan.toString());
                         }
                     }
-                    else if(isRamadhanWeek(thisWeek))
+                    else if(isRamadhanWeek(thisWeek)) {
                         setIshaIqama(thisWeek, getIshaIqama(thisWeek, 15, true));
-                    else
+                        setFajrIqama(thisWeek, getFajrIqama(thisWeek, 20, true));
+                    }
+                    else {
                         setIshaIqama(thisWeek, getIshaIqama(thisWeek, 10, false));
+                        //TODO:  handle first 10 days of Shawwal
+                        setFajrIqama(thisWeek, getFajrIqama(thisWeek, 30, false));
+                    }
                 }
                 prevWeek = thisWeek;
             }
@@ -186,7 +202,7 @@ class yearlyCalendar {
                 int iqamaInMin = startInMin + 10 + 3;
                 iqamaInMin = Math.round((float)iqamaInMin/10)*10;
                 iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
-                        , toTime(iqamaInMin));
+                        , toLocalTime(iqamaInMin));
             }
 
             LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "asr");
@@ -202,7 +218,7 @@ class yearlyCalendar {
                     iqamaInMin = (int) Math.ceil((float) iqamaInMin / timeAfter) * timeAfter;
                 else iqamaInMin = Math.round((float) iqamaInMin / timeAfter) * timeAfter;
                 iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
-                        , toTime(iqamaInMin));
+                        , toLocalTime(iqamaInMin));
             }
 
             LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "isha");
@@ -221,74 +237,97 @@ class yearlyCalendar {
                                                             + days.get(0));
         }
 
-        private static LocalTime getFajrIqama(List<Day> days, int timeAfter) {
+        private static LocalTime getFajrIqama(List<Day> days, int timeAfter, boolean isRamadhan) {
             SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
             for(Day day : days) {
-                int startInMin = toMinutes(day.getTiming().isha);
-                int iqamaInMin = startInMin + timeAfter + 3;
+                int startInMin = toMinutes(day.getTiming().fajr);
+                int iqamaInMin = startInMin + timeAfter;
 
-                iqamaInMin = Math.round((float) iqamaInMin / timeAfter) * timeAfter;
+                iqamaInMin = Math.round((float) iqamaInMin / 10) * 10;
                 iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
-                        , toTime(iqamaInMin));
+                        , toLocalTime(iqamaInMin));
             }
 
             LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "fajr");
             LocalTime five = LocalTime.parse("05:00");
             LocalTime sixThirty = LocalTime.parse("06:30");
-            //TODO:  Might need to adjust for Ramadhan
             if(validIqamaTime != null) {
-                if (validIqamaTime.compareTo(five) < 0)
-                    return five;
-                else if (validIqamaTime.compareTo(sixThirty) > 0)
-                    return sixThirty;
-                else
+                if(!isRamadhan) {
+                    if (validIqamaTime.compareTo(five) < 0)
+                        return five;
+                    else if (validIqamaTime.compareTo(sixThirty) > 0)
+                        return sixThirty;
+                    else
+                        return validIqamaTime;
+                } else
                     return validIqamaTime;
             } else
-                throw new IllegalStateException("could not calculate valid Isha Iqama time for the week of "
+                throw new IllegalStateException("could not calculate valid Fajr Iqama time for the week of "
                         + days.get(0));
         }
 
         private static LocalTime getValidIqamaTime(List<Day> forDays
                                     , Map<Integer, LocalTime> iqamaTimes, String forSalah) {
             Map.Entry<Integer, LocalTime> validIqamaTime = null;
-            for(Map.Entry<Integer, LocalTime> entry : iqamaTimes.entrySet()) {
-                boolean foundIt = true;
-                for(Day day: forDays) {
-                    int startInMin = 0;
-                    switch (forSalah) {
-                        case "asr" -> startInMin = toMinutes(day.getTiming().asr);
-                        case "isha" -> startInMin = toMinutes(day.getTiming().isha);
-                        case "fajr" -> {
-                            throw new UnsupportedOperationException("Fajr salah calculations not implemented");
+            if(forSalah.compareTo("fajr") == 0)  {
+                return findOptimalFajrIqama(forDays, iqamaTimes);
+            } else {
+                for (Map.Entry<Integer, LocalTime> entry : iqamaTimes.entrySet()) {
+                    boolean foundIt = true;
+                    for (Day day : forDays) {
+                        int startInMin = 0;
+                        switch (forSalah) {
+                            case "asr" -> startInMin = toMinutes(day.getTiming().asr);
+                            case "isha" -> startInMin = toMinutes(day.getTiming().isha);
+                            default -> throw new IllegalStateException("unknow salah type " + forSalah);
                         }
-                        default -> throw new IllegalStateException("unknow salah type " + forSalah);
+                        if (entry.getKey() - startInMin < 3) {
+                            foundIt = false;
+                            break;
+                        }
                     }
-                    if(entry.getKey() - startInMin < 3) {
-                        foundIt = false;
+                    if (foundIt) {
+                        validIqamaTime = entry;
                         break;
                     }
                 }
-                if(foundIt) {
-                    validIqamaTime = entry;
-                    break;
-                }
+                if (validIqamaTime != null)
+                    return validIqamaTime.getValue();
+                else
+                    return null;
             }
-            if(validIqamaTime != null)
-                return validIqamaTime.getValue();
-            else
-                return null;
         }
-        private static int toMinutes(String timeString) {
+
+    private static LocalTime findOptimalFajrIqama(List<Day> forDays, Map<Integer, LocalTime> iqamaTimes) {
+        SortedMap<Integer, LocalTime> errors = new TreeMap<>();
+        for(Map.Entry<Integer, LocalTime> entry : iqamaTimes.entrySet()) {
+            int error = 0;
+            for(Day day: forDays)
+                error += Math.pow(toMinutes(day.getTiming().fajr) + 30 - entry.getKey(), 2);
+            errors.put(error, entry.getValue());
+        }
+        return errors.get(errors.firstKey());
+    }
+
+    private static int toMinutes(String timeString) {
             LocalTime time = LocalTime.parse(timeString);
             return time.getHour() * 60 + time.getMinute();
         }
 
-        private static LocalTime toTime(int minutes) {
+        private static LocalTime toLocalTime(int minutes) {
             LocalTime retVal = null;
-            if(minutes%60 != 0)
-                retVal = LocalTime.parse(minutes/60 +":" + minutes%60);
-            else
-               retVal =  LocalTime.parse(minutes/60 +":" + minutes%60 + "0");
+            if(minutes%60 != 0) {
+                if (minutes / 60 < 10)
+                    retVal = LocalTime.parse("0" + minutes / 60 + ":" + minutes % 60);
+                else
+                    retVal = LocalTime.parse(minutes / 60 + ":" + minutes % 60);
+            }
+            else {
+                if (minutes / 60 < 10)
+                    retVal = LocalTime.parse("0" + minutes / 60 + ":" + minutes % 60 + "0");
+                else
+                    retVal = LocalTime.parse(minutes / 60 + ":" + minutes % 60 + "0");
+            }
             return retVal;
         }
 
@@ -315,6 +354,13 @@ class yearlyCalendar {
             });
             return days;
         }
+
+    private static List<Day> setFajrIqama(List<Day> days, LocalTime iqamaTime) {
+        days.forEach(day -> {
+            day.getTiming().setFajrIqama(iqamaTime.toString());
+        });
+        return days;
+    }
 
         private static boolean isDayLightWeek(List<Day> days, String timeZone) {
             TimeZone tz = TimeZone.getTimeZone(timeZone);
