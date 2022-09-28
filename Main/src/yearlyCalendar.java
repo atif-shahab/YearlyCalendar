@@ -135,7 +135,8 @@ class yearlyCalendar {
                         LocalTime ishaIqamaBeforeRamadhan = getIshaIqama(thisWeek, 10, false);
                         LocalTime ishaIqamaInRamadhan = getIshaIqama(thisWeek, 15, true);
                         LocalTime fajrIqamaInRamadhan = getFajrIqama(thisWeek, 20, true);
-
+                        //TODO:  This can result in undesirable case where time changes for few days before
+                        // chanching again
                         for (Day day : thisWeek) {
                             switch (day.getHijriMonth()) {
                                 case 9 ->
@@ -155,8 +156,7 @@ class yearlyCalendar {
                     }
                     else {
                         setIshaIqama(thisWeek, getIshaIqama(thisWeek, 10, false));
-                        //TODO:  clean this hacky solution
-                        if(thisWeek.get(0).getHijriMonth() == 10 & thisWeek.get(thisWeek.size()-1).getHijriDay() < 11)
+                        if(isShawwalButLessThanEleventh(thisWeek))
                             setFajrIqama(thisWeek, getFajrIqama(thisWeek, 20, true));
                         else
                             setFajrIqama(thisWeek, getFajrIqama(thisWeek, 30, false));
@@ -417,9 +417,7 @@ class yearlyCalendar {
         }
 
         private static boolean isShawwalButLessThanEleventh(List<Day> forDays) {
-            if(forDays.get(forDays.size()-1).getHijriMonth() == 10
-                    && (forDays.get(0).getHijriDay() <= 11
-                        || forDays.get(forDays.size()-1).getHijriDay() <= 11))
+            if(forDays.get(0).getHijriMonth() == 10 && forDays.get(0).getHijriDay() <= 11)
                 return true;
             else return false;
         }
