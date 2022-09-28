@@ -136,8 +136,7 @@ class yearlyCalendar {
                         LocalTime ishaIqamaInRamadhan = getIshaIqama(thisWeek, 15, true);
                         LocalTime fajrIqamaInRamadhan = getFajrIqama(thisWeek, 20, true);
                         //TODO:  This can result in undesirable case where time changes for few days before
-                        // chanching again
-
+                        // changing again
                         for (Day day : thisWeek) {
                             switch (day.getHijriMonth()) {
                                 case 9 ->
