@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/Days/Days.iml" filepath="$PROJECT_DIR$/Days/Days.iml" />
       <module fileurl="file://$PROJECT_DIR$/Main/Main.iml" filepath="$PROJECT_DIR$/Main/Main.iml" />
       <module fileurl="file://$PROJECT_DIR$/Network/Network.iml" filepath="$PROJECT_DIR$/Network/Network.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Utils/Utils.iml" filepath="$PROJECT_DIR$/Utils/Utils.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/YearlyCalendar.iml" filepath="$PROJECT_DIR$/.idea/YearlyCalendar.iml" />
     </modules>
   </component>

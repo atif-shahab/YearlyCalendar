@@ -399,25 +399,29 @@ class yearlyCalendar {
         }
 
         private static boolean startOfRamadhan(List<Day> forDays) {
-            if(forDays.get(0).getHijriMonth() == 8
-                    && forDays.get(forDays.size()-1).getHijriMonth() == 9) return true;
+            if(HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Shaaban
+                    && HijriMonth.fromInt(forDays.get(forDays.size()-1).getHijriMonth()) == HijriMonth.Ramadhan)
+                return true;
             else return false;
         }
 
         private static boolean endOfRamadhan(List<Day> forDays) {
-            if(forDays.get(0).getHijriMonth() == 9
-                    && forDays.get(forDays.size()-1).getHijriMonth() == 10) return true;
+            if(HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Ramadhan
+                    && HijriMonth.fromInt(forDays.get(forDays.size()-1).getHijriMonth()) == HijriMonth.Shawwal)
+                return true;
             else return false;
         }
 
         private static boolean isRamadhanWeek(List<Day> forDays) {
-            if(forDays.get(0).getHijriMonth() == 9
-                    && forDays.get(forDays.size()-1).getHijriMonth() == 9) return true;
+            if(HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Ramadhan
+                    && HijriMonth.fromInt(forDays.get(forDays.size()-1).getHijriMonth()) == HijriMonth.Ramadhan)
+                return true;
             else return false;
         }
 
         private static boolean isShawwalButLessThanEleventh(List<Day> forDays) {
-            if(forDays.get(0).getHijriMonth() == 10 && forDays.get(0).getHijriDay() <= 11)
+            if(HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Shawwal
+                    && forDays.get(0).getHijriDay() <= 11)
                 return true;
             else return false;
         }
