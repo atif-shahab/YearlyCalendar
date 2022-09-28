@@ -111,7 +111,7 @@ class yearlyCalendar {
                     setAsrIqama(thisWeek, getAsrIqama(thisWeek));
                     if(startOfRamadhan(thisWeek)) {
                         LocalTime ishaIqamaBeforeRamadhan = getIshaIqama(thisWeek, 10, false);
-                        LocalTime ishaIqamaaInRamadhan = getIshaIqama(thisWeek, 15, true);
+                        LocalTime ishaIqamaaInRamadhan = getIshaIqama(thisWeek, 20, true);
                         LocalTime fajrIqamaBeforeRamadhan = getFajrIqama(thisWeek, 30, false);
                         LocalTime fajrIqamaInRamadhan = getFajrIqama(thisWeek, 20, true);
 
@@ -133,7 +133,7 @@ class yearlyCalendar {
                     }
                     else if(endOfRamadhan(thisWeek)) {
                         LocalTime ishaIqamaBeforeRamadhan = getIshaIqama(thisWeek, 10, false);
-                        LocalTime ishaIqamaInRamadhan = getIshaIqama(thisWeek, 15, true);
+                        LocalTime ishaIqamaInRamadhan = getIshaIqama(thisWeek, 20, true);
                         LocalTime fajrIqamaInRamadhan = getFajrIqama(thisWeek, 20, true);
                         //TODO:  This can result in undesirable case where time changes for few days before
                         // changing again
@@ -151,7 +151,7 @@ class yearlyCalendar {
                         }
                     }
                     else if(isRamadhanWeek(thisWeek)) {
-                        setIshaIqama(thisWeek, getIshaIqama(thisWeek, 15, true));
+                        setIshaIqama(thisWeek, getIshaIqama(thisWeek, 20, true));
                         setFajrIqama(thisWeek, getFajrIqama(thisWeek, 20, true));
                     }
                     else {
@@ -218,7 +218,7 @@ class yearlyCalendar {
                 int startInMin = toMinutes(day.getTiming().isha);
                 int iqamaInMin = startInMin + timeAfter + 3;
                 if(isRamadhan)
-                    iqamaInMin = (int) Math.ceil((float) iqamaInMin / timeAfter) * timeAfter;
+                    iqamaInMin = (int) Math.ceil((float) iqamaInMin / 10) * 10;
                 else iqamaInMin = Math.round((float) iqamaInMin / timeAfter) * timeAfter;
                 iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
                         , toLocalTime(iqamaInMin));
