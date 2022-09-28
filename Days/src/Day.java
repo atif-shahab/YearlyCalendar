@@ -73,4 +73,18 @@ public class Day {
                                             + " didn't match the pattern "
                                             + p);
     }
+
+    public int getHijriDay() {
+        return patternMatcher( "-(\\d\\d)\\z");
+    }
+
+    public int patternMatcher(String p) {
+        Pattern pattern = Pattern.compile(p);
+        Matcher matcher = pattern.matcher(getHijriDate());
+        if(matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        } else {
+            throw new IllegalStateException("couldn't patch patter " + p + " with Hijri Date " + getHijriDate());
+        }
+    }
 }

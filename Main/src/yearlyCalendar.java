@@ -155,8 +155,11 @@ class yearlyCalendar {
                     }
                     else {
                         setIshaIqama(thisWeek, getIshaIqama(thisWeek, 10, false));
-                        //TODO:  handle first 10 days of Shawwal
-                        setFajrIqama(thisWeek, getFajrIqama(thisWeek, 30, false));
+                        //TODO:  clean this hacky solution
+                        if(thisWeek.get(0).getHijriMonth() == 10 & thisWeek.get(thisWeek.size()-1).getHijriDay() < 11)
+                            setFajrIqama(thisWeek, getFajrIqama(thisWeek, 20, true));
+                        else
+                            setFajrIqama(thisWeek, getFajrIqama(thisWeek, 30, false));
                     }
                 }
                 prevWeek = thisWeek;
@@ -205,7 +208,7 @@ class yearlyCalendar {
                         , toLocalTime(iqamaInMin));
             }
 
-            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "asr");
+            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "asr", false);
             return validIqamaTime;
         }
 
@@ -221,16 +224,18 @@ class yearlyCalendar {
                         , toLocalTime(iqamaInMin));
             }
 
-            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "isha");
+            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "isha", isRamadhan);
             LocalTime sevenThirty = LocalTime.parse("19:30");
             LocalTime tenTen = LocalTime.parse("22:10");
-            //TODO:  Might need to adjust for Ramadhan
             if(validIqamaTime != null) {
-                if (validIqamaTime.compareTo(sevenThirty) < 0)
-                    return sevenThirty;
-                else if (validIqamaTime.compareTo(tenTen) > 0)
-                    return tenTen;
-                else
+                if(!isRamadhan) {
+                    if (validIqamaTime.compareTo(sevenThirty) < 0)
+                        return sevenThirty;
+                    else if (validIqamaTime.compareTo(tenTen) > 0)
+                        return tenTen;
+                    else
+                        return validIqamaTime;
+                } else
                     return validIqamaTime;
             } else
                 throw new IllegalStateException("could not calculate valid Isha Iqama time for the week of "
@@ -248,7 +253,7 @@ class yearlyCalendar {
                         , toLocalTime(iqamaInMin));
             }
 
-            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "fajr");
+            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "fajr", isRamadhan);
             LocalTime five = LocalTime.parse("05:00");
             LocalTime sixThirty = LocalTime.parse("06:30");
             if(validIqamaTime != null) {
@@ -267,10 +272,10 @@ class yearlyCalendar {
         }
 
         private static LocalTime getValidIqamaTime(List<Day> forDays
-                                    , Map<Integer, LocalTime> iqamaTimes, String forSalah) {
+                                    , Map<Integer, LocalTime> iqamaTimes, String forSalah, boolean isRamadhan) {
             Map.Entry<Integer, LocalTime> validIqamaTime = null;
             if(forSalah.compareTo("fajr") == 0)  {
-                return findOptimalFajrIqama(forDays, iqamaTimes);
+                return findOptimalFajrIqama(forDays, iqamaTimes, isRamadhan);
             } else {
                 for (Map.Entry<Integer, LocalTime> entry : iqamaTimes.entrySet()) {
                     boolean foundIt = true;
@@ -294,16 +299,20 @@ class yearlyCalendar {
                 if (validIqamaTime != null)
                     return validIqamaTime.getValue();
                 else
-                    return null;
+                    throw new IllegalStateException("unable to compute a valid iqama");
             }
         }
 
-    private static LocalTime findOptimalFajrIqama(List<Day> forDays, Map<Integer, LocalTime> iqamaTimes) {
+    private static LocalTime findOptimalFajrIqama(List<Day> forDays, Map<Integer, LocalTime> iqamaTimes, boolean isRamadhan) {
         SortedMap<Integer, LocalTime> errors = new TreeMap<>();
         for(Map.Entry<Integer, LocalTime> entry : iqamaTimes.entrySet()) {
             int error = 0;
-            for(Day day: forDays)
-                error += Math.pow(toMinutes(day.getTiming().fajr) + 30 - entry.getKey(), 2);
+            for(Day day: forDays) {
+                if(isRamadhan)
+                    error += Math.pow(toMinutes(day.getTiming().fajr) + 20 - entry.getKey(), 2);
+                else
+                    error += Math.pow(toMinutes(day.getTiming().fajr) + 30 - entry.getKey(), 2);
+            }
             errors.put(error, entry.getValue());
         }
         return errors.get(errors.firstKey());
@@ -404,6 +413,14 @@ class yearlyCalendar {
         private static boolean isRamadhanWeek(List<Day> forDays) {
             if(forDays.get(0).getHijriMonth() == 9
                     && forDays.get(forDays.size()-1).getHijriMonth() == 9) return true;
+            else return false;
+        }
+
+        private static boolean isShawwalButLessThanEleventh(List<Day> forDays) {
+            if(forDays.get(forDays.size()-1).getHijriMonth() == 10
+                    && (forDays.get(0).getHijriDay() <= 11
+                        || forDays.get(forDays.size()-1).getHijriDay() <= 11))
+                return true;
             else return false;
         }
     }
