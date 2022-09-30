@@ -1,4 +1,5 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
+import picocli.CommandLine;
 
 import java.io.IOException;
 import java.time.DayOfWeek;
@@ -8,8 +9,17 @@ import java.util.*;
 
 // https://www.islamicfinder.us/index.php/api/prayer_times?country=US&zipcode=94582&latitude=37.7767&longitude=-121.9692&method=2&juristic=1&date=1663027200
 // https://www.islamicfinder.us/index.php/api/calendar?day=1&month=1&year=2023&convert_to=0
-class yearlyCalendar {
-    public static void main(String[] args) {
+@CommandLine.Command(name = "YearlyCalendar", mixinStandardHelpOptions = true,
+            description = "Prints the yearly salah calendar")
+class yearlyCalendar implements Runnable {
+    @CommandLine.Option(names={"-y", "--year"}, required = true
+            , description = "Gregorian year for which to calculate the salah calendar")
+    int year;
+
+    public static void main (String[] args) {
+        System.exit(new CommandLine(new yearlyCalendar()).execute(args));
+    }
+    public  void run() {
         String calEndPoint = "https://www.islamicfinder.us/index.php/api/prayer_times?";
         String hijriEndPoint = "https://www.islamicfinder.us/index.php/api/calendar?";
         String country = "US";
@@ -25,8 +35,7 @@ class yearlyCalendar {
         String initAsrIqama = "15:30";
         String initIshaIqama = "19:30";
 
-        int year = 2023;
-        List<Day> daysInYear = Days.getDays(year);
+        List<Day> daysInYear = Days.getDays(this.year);
 
         //daysInYear.forEach((n) -> System.out.println(n));
 
@@ -65,8 +74,6 @@ class yearlyCalendar {
                                 .sendGET(HijriURL
                                         .getHijriURL(hijriEndPoint, day))))
                         .getHijriDate());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -97,7 +104,7 @@ class yearlyCalendar {
                     setDhuhrIqama(thisWeek, getDhuhrIqama(thisWeek, timezone));
                     setAsrIqama(thisWeek, getAsrIqama(thisWeek));
                     if(startOfRamadhan(thisWeek))
-                        throw new UnsupportedOperationException("start of ramdhan " + thisWeek.get(0));
+                        throw new UnsupportedOperationException("start of ramadhan " + thisWeek.get(0));
                     else if(endOfRamadhan(thisWeek))
                         throw new UnsupportedOperationException("end of ramadhan " + thisWeek.get(0));
                     else if(isRamadhanWeek(thisWeek))
@@ -199,17 +206,16 @@ class yearlyCalendar {
 
         private static LocalTime getAsrIqama(List<Day> days) {
             SortedMap<Integer, LocalTime> iqamaTimeForEachDay = new TreeMap<>();
-            //TODO:  Extract the following as a method since it is common to both isha and asr mthods
+            //TODO:  Extract the following as a method since it is common to both isha and asr methods
             for(Day day : days) {
                 int startInMin = toMinutes(day.getTiming().asr);
                 int iqamaInMin = startInMin + 10 + 3;
                 iqamaInMin = Math.round((float)iqamaInMin/10)*10;
-                iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
+                iqamaTimeForEachDay.put(iqamaInMin
                         , toLocalTime(iqamaInMin));
             }
 
-            LocalTime validIqamaTime = getValidIqamaTime(days, iqamaTimeForEachDay, "asr", false);
-            return validIqamaTime;
+            return getValidIqamaTime(days, iqamaTimeForEachDay, "asr", false);
         }
 
         private static LocalTime getIshaIqama(List<Day> days, int timeAfter, boolean isRamadhan) {
@@ -220,7 +226,7 @@ class yearlyCalendar {
                 if(isRamadhan)
                     iqamaInMin = (int) Math.ceil((float) iqamaInMin / 10) * 10;
                 else iqamaInMin = Math.round((float) iqamaInMin / timeAfter) * timeAfter;
-                iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
+                iqamaTimeForEachDay.put(iqamaInMin
                         , toLocalTime(iqamaInMin));
             }
 
@@ -249,7 +255,7 @@ class yearlyCalendar {
                 int iqamaInMin = startInMin + timeAfter;
 
                 iqamaInMin = Math.round((float) iqamaInMin / 10) * 10;
-                iqamaTimeForEachDay.put(Integer.valueOf(iqamaInMin)
+                iqamaTimeForEachDay.put(iqamaInMin
                         , toLocalTime(iqamaInMin));
             }
 
@@ -333,9 +339,9 @@ class yearlyCalendar {
             }
             else {
                 if (minutes / 60 < 10)
-                    retVal = LocalTime.parse("0" + minutes / 60 + ":" + minutes % 60 + "0");
+                    retVal = LocalTime.parse("0" + minutes / 60 + ":00");
                 else
-                    retVal = LocalTime.parse(minutes / 60 + ":" + minutes % 60 + "0");
+                    retVal = LocalTime.parse(minutes / 60 + ":00");
             }
             return retVal;
         }
@@ -399,31 +405,23 @@ class yearlyCalendar {
         }
 
         private static boolean startOfRamadhan(List<Day> forDays) {
-            if(HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Shaaban
-                    && HijriMonth.fromInt(forDays.get(forDays.size()-1).getHijriMonth()) == HijriMonth.Ramadhan)
-                return true;
-            else return false;
+            return HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Shaaban
+                    && HijriMonth.fromInt(forDays.get(forDays.size() - 1).getHijriMonth()) == HijriMonth.Ramadhan;
         }
 
         private static boolean endOfRamadhan(List<Day> forDays) {
-            if(HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Ramadhan
-                    && HijriMonth.fromInt(forDays.get(forDays.size()-1).getHijriMonth()) == HijriMonth.Shawwal)
-                return true;
-            else return false;
+            return HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Ramadhan
+                    && HijriMonth.fromInt(forDays.get(forDays.size() - 1).getHijriMonth()) == HijriMonth.Shawwal;
         }
 
         private static boolean isRamadhanWeek(List<Day> forDays) {
-            if(HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Ramadhan
-                    && HijriMonth.fromInt(forDays.get(forDays.size()-1).getHijriMonth()) == HijriMonth.Ramadhan)
-                return true;
-            else return false;
+            return HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Ramadhan
+                    && HijriMonth.fromInt(forDays.get(forDays.size() - 1).getHijriMonth()) == HijriMonth.Ramadhan;
         }
 
         private static boolean isShawwalButLessThanEleventh(List<Day> forDays) {
-            if(HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Shawwal
-                    && forDays.get(0).getHijriDay() <= 11)
-                return true;
-            else return false;
+            return HijriMonth.fromInt(forDays.get(0).getHijriMonth()) == HijriMonth.Shawwal
+                    && forDays.get(0).getHijriDay() <= 11;
         }
     }
 
