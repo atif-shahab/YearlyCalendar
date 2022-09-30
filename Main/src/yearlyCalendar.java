@@ -1,43 +1,55 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
 import picocli.CommandLine;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.*;
 
-
-// https://www.islamicfinder.us/index.php/api/prayer_times?country=US&zipcode=94582&latitude=37.7767&longitude=-121.9692&method=2&juristic=1&date=1663027200
-// https://www.islamicfinder.us/index.php/api/calendar?day=1&month=1&year=2023&convert_to=0
 @CommandLine.Command(name = "YearlyCalendar", mixinStandardHelpOptions = true,
             description = "Prints the yearly salah calendar")
 class yearlyCalendar implements Runnable {
     @CommandLine.Option(names={"-y", "--year"}, required = true
             , description = "Gregorian year for which to calculate the salah calendar")
     int year;
+    @CommandLine.Option(names={"-f", "--file"}, required = true,
+                description = "File with properties")
+    String filename;
 
     public static void main (String[] args) {
         System.exit(new CommandLine(new yearlyCalendar()).execute(args));
     }
     public  void run() {
-        String calEndPoint = "https://www.islamicfinder.us/index.php/api/prayer_times?";
-        String hijriEndPoint = "https://www.islamicfinder.us/index.php/api/calendar?";
-        String country = "US";
-        String zipCode = "94582";
-        String latitude = "37.7767";
-        String longitude = "-121.9692";
-        String method = "2";
-        String juristic = "1";
-        String timeFormat = "0";
-        String timezone = "America/Los_Angeles";
-        String initFajrIqama = "06:30";
-        String initDhuhrIqama = "12:30";
-        String initAsrIqama = "15:30";
-        String initIshaIqama = "19:30";
+        Properties prop = new Properties();
+        try (InputStream input = new FileInputStream(filename)) {
+            // load a properties file
+            prop.load(input);
+
+            // get the property value and print it out
+
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        // get the property value and print it out
+        String calEndPoint = prop.getProperty("calendar.EndPoint");
+        String hijriEndPoint = prop.getProperty("hijri.EndPoint");
+        String country = prop.getProperty("country");
+        String zipCode = prop.getProperty("zipCode");
+        String latitude = prop.getProperty("latitude");
+        String longitude = prop.getProperty("longitude");
+        String method = prop.getProperty("method");
+        String juristic = prop.getProperty("juristic");
+        String timeFormat = prop.getProperty("timeFormat");
+        String timezone = prop.getProperty("timezone");
+        String initFajrIqama = prop.getProperty("initial.FajrIqama");
+        String initDhuhrIqama = prop.getProperty("initial.DhuhrIqama");
+        String initAsrIqama = prop.getProperty("initial.AsrIqama");
+        String initIshaIqama = prop.getProperty("initial.IshaIqama");
 
         List<Day> daysInYear = Days.getDays(this.year);
-
-        //daysInYear.forEach((n) -> System.out.println(n));
 
         Map<String, String> requestParams = new HashMap<>();
         requestParams.put("country", country);
@@ -200,7 +212,7 @@ class yearlyCalendar implements Runnable {
                         iqamaTimeForEachDay.add(LocalTime.parse("12:30"));
                 }
             }
-            Collections.sort(iqamaTimeForEachDay, (a,b) -> a.compareTo(b));
+            iqamaTimeForEachDay.sort(Comparator.naturalOrder());
             return iqamaTimeForEachDay.get(iqamaTimeForEachDay.size()-1);
         }
 
@@ -286,7 +298,7 @@ class yearlyCalendar implements Runnable {
                 for (Map.Entry<Integer, LocalTime> entry : iqamaTimes.entrySet()) {
                     boolean foundIt = true;
                     for (Day day : forDays) {
-                        int startInMin = 0;
+                        int startInMin;
                         switch (forSalah) {
                             case "asr" -> startInMin = toMinutes(day.getTiming().asr);
                             case "isha" -> startInMin = toMinutes(day.getTiming().isha);
@@ -330,7 +342,7 @@ class yearlyCalendar implements Runnable {
         }
 
         private static LocalTime toLocalTime(int minutes) {
-            LocalTime retVal = null;
+            LocalTime retVal;
             if(minutes%60 != 0) {
                 if (minutes / 60 < 10)
                     retVal = LocalTime.parse("0" + minutes / 60 + ":" + minutes % 60);
